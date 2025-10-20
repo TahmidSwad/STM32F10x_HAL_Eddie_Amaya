@@ -1,0 +1,28 @@
+# Keil uVision build directories
+DebugConfig/
+Objects/
+Listings/
+
+# RTE components (auto-generated)
+RTE/
+
+# Keil user-specific settings
+*.uvguix.*
+*.uvoptx
+
+# Compiled files
+*.o
+*.d
+*.elf
+*.map
+*.hex
+
+# Backup and temporary files
+*.bak
+*.swp
+*.tmp
+
+# Keil Event Recorder
+EventRecorderStub.scvd
+
+
