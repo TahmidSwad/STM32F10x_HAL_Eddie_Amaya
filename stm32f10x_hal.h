@@ -65,4 +65,9 @@ void delayMs(uint32_t ms);
 void SERIAL_BEGIN();
 void printMsg(char *msg, ...);
 
+void hal_enter_standby();
+void hal_enter_stop();
+void hal_enter_sleep();
+void wakeup_handler();
+
 #endif

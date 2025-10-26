@@ -304,17 +304,6 @@ void SERIAL_BEGIN()
 	USART1->CR1 |= USART_CR1_UE;
 }
 
-void delayMs(uint32_t ms)
-{
-	for(uint32_t i = 0; i < ms; i++)
-	{
-		TIM2->CNT = 0;
-		TIM2->SR &= ~TIM_SR_UIF;
-		
-		while(!(TIM2->SR & TIM_SR_UIF));
-	}
-}
-
 /**
  * @brief  Sends a formatted string over USART1.
  * @param  msg: Pointer to a null-terminated format string (like printf).
@@ -347,4 +336,85 @@ void delay_timer_init()
 	TIM2->EGR |= TIM_EGR_UG;
 	TIM2->SR &= ~TIM_SR_UIF;
 	TIM2->CR1 |= TIM_CR1_CEN;
+}
+
+void delayMs(uint32_t ms)
+{
+	for(uint32_t i = 0; i < ms; i++)
+	{
+		TIM2->CNT = 0;
+		TIM2->SR &= ~TIM_SR_UIF;
+		
+		while(!(TIM2->SR & TIM_SR_UIF));
+	}
+}
+
+
+void hal_enter_standby()
+{
+   // Enable PWR peripheral
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+
+    // Clear any previous wakeup and standby flags
+    PWR->CR |= PWR_CR_CWUF;   // Clear wakeup flag
+    PWR->CR |= PWR_CR_CSBF;   // Clear standby flag
+
+    // Configure standby mode
+    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+    PWR->CR |= PWR_CR_PDDS;   // Enter standby mode when WFI executed
+    PWR->CSR |= PWR_CSR_EWUP; // Enable WKUP pin
+
+    __WFI();                   // Enter standby
+}
+
+void hal_enter_stop()
+{
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+  // Select Stop mode: set SLEEPDEEP
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+  // Set PDDS = 0 (Stop mode), LPDS = 1 (low-power regulator)
+  PWR->CR &= ~PWR_CR_PDDS;  // ensure PDDS=0 for Stop mode
+  PWR->CR |= PWR_CR_LPDS;   // low power regulator
+
+  // Clear Wakeup flag if needed
+  PWR->CR |= PWR_CR_CWUF;
+
+  __WFI();  // Enter Stop mode	
+}
+
+void hal_enter_sleep()
+{
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+  // Clear SLEEPDEEP bit ? select Sleep mode
+  SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+	
+  __WFI(); // Wait For Interrupt
+}
+
+void hal_enter_sleeponexit()
+{
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+	// Clear SLEEPDEEP bit ? select Sleep mode
+  SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+
+  SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk; // auto sleep on ISR exit
+  __WFI(); // Wait For Interrupt
+}
+
+void wakeup_handler()
+{
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+	if((PWR->CSR) & (PWR_CSR_SBF))
+	{
+		PWR->CR |= PWR_CR_CWUF;
+		PWR->CR |= PWR_CR_CSBF;
+		
+		printMsg("Awaken from standby\n");
+	}
+	else{
+		PWR->CR |= PWR_CR_CWUF;
+		PWR->CR |= PWR_CR_CSBF;
+		printMsg("Awaken from power cycle\n");
+	}
 }

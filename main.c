@@ -26,16 +26,18 @@ int main()
 	button.pin = 8; GPIO_INIT(GPIOB, &button);
 	
 	SERIAL_BEGIN();
+	wakeup_handler(); // BUG! - after power cycle, automatically weakes up from standby mode, only for the first time.
 	
+	GPIO_WRITE(GPIOB, 13, SET);
 	
 	while(1)
 	{
 		printMsg("SWAD\n");
 		GPIO_WRITE(GPIOC, 13, SET);
-		delayMs(100);
+		delayMs(200);
 
 		GPIO_WRITE(GPIOC, 13, RESET);
-		delayMs(100);
+		delayMs(200);
 			
 		if(blink == 0)
 		{
@@ -49,20 +51,23 @@ void EXTI9_5_IRQHandler(void)
 {
 	if (EXTI->PR & (1 << 9))
 	{
-		delayMs(5);
+		delayMs(10);
 		if (GPIO_READ(GPIOB, 9) == 0) 
 		{
 			GPIO_TOGGLE(GPIOB, 13);
+			
 		}
-			// Clear the interrupt pending bit
-			CLEAR_EXTI_PENDING(9);
+		
+  	// Clear the interrupt pending bit
+		CLEAR_EXTI_PENDING(9);
+		hal_enter_sleep();
 	}
 	
 	
 	
 	if (EXTI->PR & (1 << 8))
   {
-		delayMs(5);
+		delayMs(10);
 		uint8_t confirmed = GPIO_READ(GPIOB, 8);
 
 		if (confirmed != blink)
